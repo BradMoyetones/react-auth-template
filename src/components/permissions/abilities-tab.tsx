@@ -1,18 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Plus, Key, Lock } from 'lucide-react';
+import { Search, Plus, Key, Lock, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { mockAbilities } from '@/lib/mock-data';
 import { CreateAbilityDialog } from './create-ability-dialog';
+import type { Ability } from '@/types';
 
 export function AbilitiesTab() {
     const [searchQuery, setSearchQuery] = useState('');
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [editAbility, setEditAbility] = useState<Ability | null>(null);
 
     const filteredAbilities = mockAbilities.filter(
         (ability) =>
@@ -29,6 +37,13 @@ export function AbilitiesTab() {
         acc[entity].push(ability);
         return acc;
     }, {} as Record<string, typeof mockAbilities>);
+
+    const handleDeleteAbility = (ability: Ability) => {
+        console.log('Eliminar habilidad:', {
+            ability_id: ability.id,
+            action: 'delete',
+        });
+    };
 
     return (
         <div className="space-y-6">
@@ -71,8 +86,8 @@ export function AbilitiesTab() {
                                     <Card className="p-4 transition-all hover:border-primary/50">
                                         <div className="flex items-start justify-between gap-2 mb-3">
                                             <div className="flex items-center gap-2">
-                                                <div className="rounded-lg bg-primary/10 p-2">
-                                                    <Key className="h-4 w-4 text-primary" />
+                                                <div className="rounded-lg bg-muted p-2">
+                                                    <Key className="h-4 w-4 text-muted-foreground" />
                                                 </div>
                                                 <div>
                                                     <h4 className="font-medium text-sm text-foreground">
@@ -83,6 +98,26 @@ export function AbilitiesTab() {
                                                     </p>
                                                 </div>
                                             </div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => setEditAbility(ability)}>
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        Editar
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        className="text-destructive"
+                                                        onClick={() => handleDeleteAbility(ability)}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Eliminar
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
 
                                         <div className="flex flex-wrap gap-2">
@@ -120,7 +155,14 @@ export function AbilitiesTab() {
                 ))}
             </div>
 
-            <CreateAbilityDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+            <CreateAbilityDialog
+                open={createDialogOpen || !!editAbility}
+                onOpenChange={(open) => {
+                    setCreateDialogOpen(open);
+                    if (!open) setEditAbility(null);
+                }}
+                editAbility={editAbility || undefined}
+            />
         </div>
     );
 }

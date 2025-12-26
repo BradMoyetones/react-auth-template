@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Plus, Users, MoreVertical, Edit, Trash2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -22,6 +22,7 @@ export function RolesTab() {
     const [searchQuery, setSearchQuery] = useState('');
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [selectedRole, setSelectedRole] = useState<RoleWithPermissions | null>(null);
+    const [editRole, setEditRole] = useState<RoleWithPermissions | null>(null);
     const roles = getRolesWithPermissions();
 
     const filteredRoles = roles.filter(
@@ -35,6 +36,13 @@ export function RolesTab() {
         if (level >= 80) return 'bg-destructive/10 text-destructive';
         if (level >= 50) return 'bg-warning/10 text-warning';
         return 'bg-success/10 text-success';
+    };
+
+    const handleDeleteRole = (role: RoleWithPermissions) => {
+        console.log('Eliminar rol:', {
+            role_id: role.id,
+            action: 'delete',
+        });
     };
 
     return (
@@ -85,11 +93,14 @@ export function RolesTab() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => setSelectedRole(role)}>
+                                        <DropdownMenuItem onClick={() => setEditRole(role)}>
                                             <Edit className="mr-2 h-4 w-4" />
                                             Editar rol
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-destructive">
+                                        <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => handleDeleteRole(role)}
+                                        >
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Eliminar rol
                                         </DropdownMenuItem>
@@ -139,7 +150,14 @@ export function RolesTab() {
                 ))}
             </div>
 
-            <CreateRoleDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+            <CreateRoleDialog
+                open={createDialogOpen || !!editRole}
+                onOpenChange={(open) => {
+                    setCreateDialogOpen(open);
+                    if (!open) setEditRole(null);
+                }}
+                editRole={editRole || undefined}
+            />
 
             {selectedRole && (
                 <RolePermissionsDialog

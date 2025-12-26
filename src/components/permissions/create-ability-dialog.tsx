@@ -2,12 +2,14 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useEffect } from 'react';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import type { Ability } from '@/types';
 
 const abilitySchema = z.object({
     name: z
@@ -24,9 +26,10 @@ type AbilityFormData = z.infer<typeof abilitySchema>;
 interface CreateAbilityDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    editAbility?: Ability;
 }
 
-export function CreateAbilityDialog({ open, onOpenChange }: CreateAbilityDialogProps) {
+export function CreateAbilityDialog({ open, onOpenChange, editAbility }: CreateAbilityDialogProps) {
     const form = useForm<AbilityFormData>({
         resolver: zodResolver(abilitySchema),
         defaultValues: {
@@ -37,8 +40,33 @@ export function CreateAbilityDialog({ open, onOpenChange }: CreateAbilityDialogP
         },
     });
 
+    useEffect(() => {
+        if (editAbility) {
+            form.reset({
+                name: editAbility.name,
+                title: editAbility.title || '',
+                entity_type: editAbility.entity_type || '',
+                only_owned: editAbility.only_owned,
+            });
+        } else {
+            form.reset({
+                name: '',
+                title: '',
+                entity_type: '',
+                only_owned: false,
+            });
+        }
+    }, [editAbility, form]);
+
     const onSubmit = (data: AbilityFormData) => {
-        console.log('Create ability:', data);
+        if (editAbility) {
+            console.log('Actualizar habilidad:', {
+                ability_id: editAbility.id,
+                ...data,
+            });
+        } else {
+            console.log('Crear habilidad:', data);
+        }
         form.reset();
         onOpenChange(false);
     };
@@ -47,8 +75,12 @@ export function CreateAbilityDialog({ open, onOpenChange }: CreateAbilityDialogP
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Crear nueva habilidad</DialogTitle>
-                    <DialogDescription>Define una nueva acción que puede realizarse en el sistema.</DialogDescription>
+                    <DialogTitle>{editAbility ? 'Editar habilidad' : 'Crear nueva habilidad'}</DialogTitle>
+                    <DialogDescription>
+                        {editAbility
+                            ? 'Modifica los datos de la habilidad.'
+                            : 'Define una nueva acción que puede realizarse en el sistema.'}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <Form {...form}>
@@ -129,7 +161,7 @@ export function CreateAbilityDialog({ open, onOpenChange }: CreateAbilityDialogP
                             >
                                 Cancelar
                             </Button>
-                            <Button type="submit">Crear habilidad</Button>
+                            <Button type="submit">{editAbility ? 'Guardar cambios' : 'Crear habilidad'}</Button>
                         </div>
                     </form>
                 </Form>

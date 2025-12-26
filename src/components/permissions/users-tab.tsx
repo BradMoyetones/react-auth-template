@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, UserPlus, MoreVertical, Shield, Key, Ban } from 'lucide-react';
+import { Search, UserPlus, MoreVertical, Shield, Key, Ban, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,14 +13,19 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { getUsersWithPermissions } from '@/lib/mock-data';
 import { UserPermissionsDialog } from './user-permissions-dialog';
+import { CreateUserDialog } from './create-user-dialog';
+import { AssignRoleDialog } from './assign-role-dialog';
 import type { UserWithPermissions } from '@/types';
 
 export function UsersTab() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState<UserWithPermissions | null>(null);
+    const [createUserOpen, setCreateUserOpen] = useState(false);
+    const [assignRoleUser, setAssignRoleUser] = useState<UserWithPermissions | null>(null);
     const users = getUsersWithPermissions();
 
     const filteredUsers = users.filter(
@@ -29,6 +34,20 @@ export function UsersTab() {
             user.lastname.toLowerCase().includes(searchQuery.toLowerCase()) ||
             user.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const handleRevokeAccess = (user: UserWithPermissions) => {
+        console.log('Revocar accesos del usuario:', {
+            user_id: user.id,
+            action: 'revoke_all',
+        });
+    };
+
+    const handleDeleteUser = (user: UserWithPermissions) => {
+        console.log('Eliminar usuario:', {
+            user_id: user.id,
+            action: 'delete',
+        });
+    };
 
     return (
         <div className="space-y-6">
@@ -42,7 +61,7 @@ export function UsersTab() {
                         className="pl-10"
                     />
                 </div>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={() => setCreateUserOpen(true)}>
                     <UserPlus className="h-4 w-4" />
                     Agregar Usuario
                 </Button>
@@ -84,13 +103,24 @@ export function UsersTab() {
                                             <Key className="mr-2 h-4 w-4" />
                                             Ver permisos
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setAssignRoleUser(user)}>
                                             <Shield className="mr-2 h-4 w-4" />
                                             Asignar rol
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-destructive">
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => handleRevokeAccess(user)}
+                                        >
                                             <Ban className="mr-2 h-4 w-4" />
                                             Revocar accesos
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => handleDeleteUser(user)}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Eliminar usuario
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -137,6 +167,16 @@ export function UsersTab() {
                     </motion.div>
                 ))}
             </div>
+
+            <CreateUserDialog open={createUserOpen} onOpenChange={setCreateUserOpen} />
+
+            {assignRoleUser && (
+                <AssignRoleDialog
+                    user={assignRoleUser}
+                    open={!!assignRoleUser}
+                    onOpenChange={(open) => !open && setAssignRoleUser(null)}
+                />
+            )}
 
             {selectedUser && (
                 <UserPermissionsDialog
