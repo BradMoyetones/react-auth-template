@@ -4,17 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useEffect, useState } from 'react';
 import * as z from 'zod';
-import { Shield } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { mockAbilities } from '@/lib/mock-data';
 import type { RoleWithPermissions } from '@/types';
+import { PermissionsGrid } from '@/components/permissions/permissions-grid';
 
 const roleSchema = z.object({
     name: z
@@ -91,7 +88,7 @@ export function CreateRoleDialog({ open, onOpenChange, editRole }: CreateRoleDia
         onOpenChange(false);
     };
 
-    const toggleAbility = (abilityId: string) => {
+    const togglePermission = (abilityId: string) => {
         setSelectedAbilities((prev) =>
             prev.includes(abilityId) ? prev.filter((id) => id !== abilityId) : [...prev, abilityId]
         );
@@ -107,18 +104,19 @@ export function CreateRoleDialog({ open, onOpenChange, editRole }: CreateRoleDia
         );
     };
 
-    const groupedAbilities = mockAbilities.reduce((acc, ability) => {
-        const entity = ability.entity_type || 'Sin categoría';
-        if (!acc[entity]) {
-            acc[entity] = [];
-        }
-        acc[entity].push(ability);
-        return acc;
-    }, {} as Record<string, typeof mockAbilities>);
+    const selectedPermissions = selectedAbilities.map((abilityId) => {
+        const ability = mockAbilities.find((a) => a.id === abilityId);
+        return {
+            abilityId,
+            entityType: ability?.entity_type || null,
+            entityId: null,
+            forbidden: deniedAbilities.includes(abilityId),
+        };
+    });
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[90vh]">
+            <DialogContent className="max-w-6xl! w-full max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>{editRole ? 'Editar rol' : 'Crear nuevo rol'}</DialogTitle>
                     <DialogDescription>
@@ -187,78 +185,12 @@ export function CreateRoleDialog({ open, onOpenChange, editRole }: CreateRoleDia
                                 />
                             </TabsContent>
 
-                            <TabsContent value="permissions" className="mt-4">
-                                <ScrollArea className="h-100 pr-4">
-                                    <div className="space-y-6">
-                                        {Object.entries(groupedAbilities).map(([entity, abilities]) => (
-                                            <div key={entity}>
-                                                <div className="mb-3 flex items-center gap-2">
-                                                    <h4 className="text-sm font-semibold text-foreground">{entity}</h4>
-                                                    <Badge variant="secondary" className="text-xs">
-                                                        {abilities.length}
-                                                    </Badge>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {abilities.map((ability) => {
-                                                        const isSelected = selectedAbilities.includes(ability.id);
-                                                        const isDenied = deniedAbilities.includes(ability.id);
-                                                        return (
-                                                            <div
-                                                                key={ability.id}
-                                                                className={`p-3 rounded-lg border-2 transition-all ${
-                                                                    isDenied
-                                                                        ? 'border-destructive bg-destructive/5'
-                                                                        : isSelected
-                                                                        ? 'border-primary bg-primary/5'
-                                                                        : 'border-border bg-background'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-3 flex-1">
-                                                                        <Checkbox
-                                                                            checked={isSelected}
-                                                                            onCheckedChange={() =>
-                                                                                toggleAbility(ability.id)
-                                                                            }
-                                                                        />
-                                                                        <div className="flex-1">
-                                                                            <h5 className="font-medium text-sm">
-                                                                                {ability.title || ability.name}
-                                                                            </h5>
-                                                                            <p className="text-xs text-muted-foreground font-mono">
-                                                                                {ability.name}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    {isSelected && (
-                                                                        <Button
-                                                                            type="button"
-                                                                            size="sm"
-                                                                            variant={
-                                                                                isDenied ? 'destructive' : 'outline'
-                                                                            }
-                                                                            onClick={() => toggleDeny(ability.id)}
-                                                                            className="gap-1"
-                                                                        >
-                                                                            <Shield className="h-3 w-3" />
-                                                                            {isDenied ? 'DENY' : 'Denegar'}
-                                                                        </Button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                                <div className="mt-4 p-3 bg-muted rounded-lg">
-                                    <p className="text-xs text-muted-foreground">
-                                        {selectedAbilities.length} permisos seleccionados
-                                        {deniedAbilities.length > 0 && ` (${deniedAbilities.length} denegados)`}
-                                    </p>
-                                </div>
+                            <TabsContent value="permissions" className="mt-4 pt-4">
+                                <PermissionsGrid
+                                    selectedPermissions={selectedPermissions}
+                                    onPermissionToggle={togglePermission}
+                                    onDenyToggle={toggleDeny}
+                                />
                             </TabsContent>
                         </Tabs>
 

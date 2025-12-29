@@ -8,12 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { mockRoles, mockAbilities } from '@/lib/mock-data';
 import { useState } from 'react';
-import { Shield, Lock } from 'lucide-react';
+import { PermissionsGrid } from './permissions-grid';
+import { RolesGrid } from './roles-grid';
 
 const userSchema = z.object({
     name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -72,17 +69,6 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
         );
     };
 
-    const isPermissionSelected = (abilityId: string, entityType: string | null = null) => {
-        return selectedPermissions.some((p) => p.abilityId === abilityId && p.entityType === entityType);
-    };
-
-    const isPermissionDenied = (abilityId: string, entityType: string | null = null) => {
-        return (
-            selectedPermissions.find((p) => p.abilityId === abilityId && p.entityType === entityType)?.forbidden ||
-            false
-        );
-    };
-
     const onSubmit = (data: UserFormData) => {
         const payload = {
             user: data,
@@ -96,16 +82,9 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
         onOpenChange(false);
     };
 
-    const groupedAbilities = mockAbilities.reduce((acc, ability) => {
-        const key = ability.entity_type || 'general';
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(ability);
-        return acc;
-    }, {} as Record<string, typeof mockAbilities>);
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogContent className="max-w-6xl! max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>Crear nuevo usuario</DialogTitle>
                     <DialogDescription>
@@ -172,7 +151,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                                         <FormItem>
                                             <FormLabel>Documento</FormLabel>
                                             <FormControl>
-                                                <Input type="number" placeholder="1234567890" {...field} onChange={(e) => field.onChange(Number(e.target.value) === 0 ? "" : Number(e.target.value))} />
+                                                <Input type="number" placeholder="1234567890" {...field} />
                                             </FormControl>
                                             <FormDescription>Número de identificación del usuario</FormDescription>
                                             <FormMessage />
@@ -183,111 +162,16 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                         </Form>
                     </TabsContent>
 
-                    <TabsContent value="roles">
-                        <ScrollArea className="h-100 pr-4">
-                            <div className="space-y-3">
-                                {mockRoles.map((role) => (
-                                    <div
-                                        key={role.id}
-                                        className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                                    >
-                                        <Checkbox
-                                            id={`role-${role.id}`}
-                                            checked={selectedRoles.includes(role.id)}
-                                            onCheckedChange={() => toggleRole(role.id)}
-                                        />
-                                        <div className="flex-1 space-y-1">
-                                            <label
-                                                htmlFor={`role-${role.id}`}
-                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
-                                            >
-                                                {role.name}
-                                                <Badge variant="outline" className="text-xs">
-                                                    Nivel {role.level}
-                                                </Badge>
-                                            </label>
-                                            {role.title && (
-                                                <p className="text-sm text-muted-foreground">{role.title}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
+                    <TabsContent value="roles" className="pt-4">
+                        <RolesGrid selectedRoles={selectedRoles} onRoleToggle={toggleRole} />
                     </TabsContent>
 
-                    <TabsContent value="permissions">
-                        <ScrollArea className="h-100 pr-4">
-                            <div className="space-y-6">
-                                {Object.entries(groupedAbilities).map(([entityType, abilities]) => (
-                                    <div key={entityType} className="space-y-3">
-                                        <h4 className="font-semibold text-sm capitalize flex items-center gap-2">
-                                            <Shield className="h-4 w-4" />
-                                            {entityType}
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {abilities.map((ability) => {
-                                                const isSelected = isPermissionSelected(
-                                                    ability.id,
-                                                    ability.entity_type
-                                                );
-                                                const isDenied = isPermissionDenied(ability.id, ability.entity_type);
-
-                                                return (
-                                                    <div
-                                                        key={ability.id}
-                                                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                                                    >
-                                                        <div className="flex items-center space-x-3 flex-1">
-                                                            <Checkbox
-                                                                id={`ability-${ability.id}`}
-                                                                checked={isSelected}
-                                                                onCheckedChange={() =>
-                                                                    togglePermission(ability.id, ability.entity_type)
-                                                                }
-                                                            />
-                                                            <label
-                                                                htmlFor={`ability-${ability.id}`}
-                                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
-                                                            >
-                                                                <code className="text-xs bg-muted px-2 py-1 rounded">
-                                                                    {ability.name}
-                                                                </code>
-                                                                {ability.only_owned && (
-                                                                    <Badge variant="secondary" className="text-xs">
-                                                                        Solo propios
-                                                                    </Badge>
-                                                                )}
-                                                                {ability.scope && (
-                                                                    <Badge variant="outline" className="text-xs">
-                                                                        {ability.scope}
-                                                                    </Badge>
-                                                                )}
-                                                            </label>
-                                                        </div>
-
-                                                        {isSelected && (
-                                                            <Button
-                                                                type="button"
-                                                                variant={isDenied ? 'destructive' : 'outline'}
-                                                                size="sm"
-                                                                onClick={() =>
-                                                                    toggleDeny(ability.id, ability.entity_type)
-                                                                }
-                                                                className="ml-2"
-                                                            >
-                                                                <Lock className="h-3 w-3 mr-1" />
-                                                                {isDenied ? 'DENY' : 'ALLOW'}
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
+                    <TabsContent value="permissions" className="pt-4">
+                        <PermissionsGrid
+                            selectedPermissions={selectedPermissions}
+                            onPermissionToggle={togglePermission}
+                            onDenyToggle={toggleDeny}
+                        />
                     </TabsContent>
                 </Tabs>
 

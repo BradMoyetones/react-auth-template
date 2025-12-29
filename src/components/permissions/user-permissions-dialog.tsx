@@ -1,17 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Key, Plus, Trash2, Ban } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { mockAbilities, mockRoles } from '@/lib/mock-data';
 import type { UserWithPermissions } from '@/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PermissionsGrid } from './permissions-grid';
+import { RolesGrid } from './roles-grid';
+import { Key, Shield } from 'lucide-react';
 
 interface UserPermissionsDialogProps {
     user: UserWithPermissions;
@@ -20,30 +17,57 @@ interface UserPermissionsDialogProps {
 }
 
 export function UserPermissionsDialog({ user, open, onOpenChange }: UserPermissionsDialogProps) {
-    const [selectedAbility, setSelectedAbility] = useState<string>('');
-    const [selectedRole, setSelectedRole] = useState<string>('');
+    const [selectedPermissions, setSelectedPermissions] = useState<
+        {
+            abilityId: string;
+            entityType: string | null;
+            entityId: string | null;
+            forbidden: boolean;
+        }[]
+    >(
+        user.permissions.map((p) => ({
+            abilityId: p.ability_id,
+            entityType: p.ability?.entity_type || null,
+            entityId: p.entity_id,
+            forbidden: p.forbidden,
+        }))
+    );
 
-    const handleAssignPermission = () => {
-        console.log('Assign permission:', { userId: user.id, abilityId: selectedAbility });
-        setSelectedAbility('');
+    const [selectedRoles, setSelectedRoles] = useState<string[]>(user.roles.map((r) => r.id));
+
+    const toggleRole = (roleId: string) => {
+        setSelectedRoles((prev) => {
+            const newRoles = prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId];
+            console.log('Update user roles:', { userId: user.id, roles: newRoles });
+            return newRoles;
+        });
     };
 
-    const handleAssignRole = () => {
-        console.log('Assign role:', { userId: user.id, roleId: selectedRole });
-        setSelectedRole('');
+    const togglePermission = (abilityId: string, entityType: string | null = null) => {
+        setSelectedPermissions((prev) => {
+            const exists = prev.find((p) => p.abilityId === abilityId && p.entityType === entityType);
+            const newPermissions = exists
+                ? prev.filter((p) => !(p.abilityId === abilityId && p.entityType === entityType))
+                : [...prev, { abilityId, entityType, entityId: null, forbidden: false }];
+
+            console.log('Update user permissions:', { userId: user.id, permissions: newPermissions });
+            return newPermissions;
+        });
     };
 
-    const handleRevokePermission = (permissionId: string) => {
-        console.log('Revoke permission:', { permissionId });
-    };
-
-    const handleRemoveRole = (roleId: string) => {
-        console.log('Remove role:', { userId: user.id, roleId });
+    const toggleDeny = (abilityId: string, entityType: string | null = null) => {
+        setSelectedPermissions((prev) => {
+            const newPermissions = prev.map((p) =>
+                p.abilityId === abilityId && p.entityType === entityType ? { ...p, forbidden: !p.forbidden } : p
+            );
+            console.log('Toggle permission deny:', { userId: user.id, permissions: newPermissions });
+            return newPermissions;
+        });
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[90vh]">
+            <DialogContent className="max-w-6xl! max-h-[90vh]">
                 <DialogHeader>
                     <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12">
@@ -74,169 +98,36 @@ export function UserPermissionsDialog({ user, open, onOpenChange }: UserPermissi
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="permissions" className="space-y-4 mt-4">
-                        <div className="rounded-lg border border-border bg-muted/30 p-4">
-                            <h4 className="text-sm font-medium mb-3">Asignar nuevo permiso</h4>
-                            <div className="flex gap-2">
-                                <Select value={selectedAbility} onValueChange={setSelectedAbility}>
-                                    <SelectTrigger className="flex-1">
-                                        <SelectValue placeholder="Selecciona una habilidad" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {mockAbilities.map((ability) => (
-                                            <SelectItem key={ability.id} value={ability.id}>
-                                                <div className="flex items-center gap-2">
-                                                    <span>{ability.title || ability.name}</span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        ({ability.entity_type})
-                                                    </span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <Button onClick={handleAssignPermission} disabled={!selectedAbility} className="gap-2">
-                                    <Plus className="h-4 w-4" />
-                                    Asignar
-                                </Button>
-                            </div>
-                        </div>
-
-                        <ScrollArea className="h-75 rounded-lg border border-border">
-                            <div className="p-4 space-y-2">
-                                <AnimatePresence>
-                                    {user.permissions.length > 0 ? (
-                                        user.permissions.map((permission) => (
-                                            <motion.div
-                                                key={permission.id}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 20 }}
-                                                className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="rounded-lg bg-muted p-2 shrink-0">
-                                                        <Key className="h-4 w-4 text-muted-foreground" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-sm">
-                                                            {permission.ability?.title || permission.ability?.name}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {permission.ability?.entity_type}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {permission.forbidden && (
-                                                        <Badge variant="destructive" className="gap-1">
-                                                            <Ban className="h-3 w-3" />
-                                                            Denegado
-                                                        </Badge>
-                                                    )}
-                                                    {permission.ability?.only_owned && (
-                                                        <Badge variant="outline" className="text-xs">
-                                                            Solo propios
-                                                        </Badge>
-                                                    )}
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-destructive hover:text-destructive"
-                                                        onClick={() => handleRevokePermission(permission.id)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </motion.div>
-                                        ))
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                                            <Key className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                                            <p className="text-sm text-muted-foreground">
-                                                No hay permisos directos asignados
-                                            </p>
-                                        </div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </ScrollArea>
+                    <TabsContent value="permissions" className="pt-4">
+                        <PermissionsGrid
+                            selectedPermissions={selectedPermissions}
+                            onPermissionToggle={togglePermission}
+                            onDenyToggle={toggleDeny}
+                        />
                     </TabsContent>
 
-                    <TabsContent value="roles" className="space-y-4 mt-4">
-                        <div className="rounded-lg border border-border bg-muted/30 p-4">
-                            <h4 className="text-sm font-medium mb-3">Asignar nuevo rol</h4>
-                            <div className="flex gap-2">
-                                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                                    <SelectTrigger className="flex-1">
-                                        <SelectValue placeholder="Selecciona un rol" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {mockRoles.map((role) => (
-                                            <SelectItem key={role.id} value={role.id}>
-                                                <div className="flex items-center gap-2">
-                                                    <span>{role.title || role.name}</span>
-                                                    {role.level && (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            (Nivel {role.level})
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <Button onClick={handleAssignRole} disabled={!selectedRole} className="gap-2">
-                                    <Plus className="h-4 w-4" />
-                                    Asignar
-                                </Button>
-                            </div>
-                        </div>
-
-                        <ScrollArea className="h-75 rounded-lg border border-border">
-                            <div className="p-4 space-y-2">
-                                <AnimatePresence>
-                                    {user.roles.length > 0 ? (
-                                        user.roles.map((role) => (
-                                            <motion.div
-                                                key={role.id}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 20 }}
-                                                className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="rounded-lg bg-muted p-2 shrink-0">
-                                                        <Shield className="h-4 w-4 text-muted-foreground" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-sm">{role.title || role.name}</p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Nivel {role.level || 0}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-destructive hover:text-destructive"
-                                                    onClick={() => handleRemoveRole(role.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </motion.div>
-                                        ))
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                                            <Shield className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                                            <p className="text-sm text-muted-foreground">No hay roles asignados</p>
-                                        </div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </ScrollArea>
+                    <TabsContent value="roles" className="pt-4">
+                        <RolesGrid selectedRoles={selectedRoles} onRoleToggle={toggleRole} />
                     </TabsContent>
                 </Tabs>
+
+                <div className="flex gap-2 justify-end pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                        Cerrar
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            console.log('Guardar cambios para usuario:', {
+                                userId: user.id,
+                                roles: selectedRoles,
+                                permissions: selectedPermissions,
+                            });
+                            onOpenChange(false);
+                        }}
+                    >
+                        Guardar cambios
+                    </Button>
+                </div>
             </DialogContent>
         </Dialog>
     );

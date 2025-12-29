@@ -1,18 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Plus, Key, Lock, MoreVertical, Edit, Trash2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Search, Plus, Lock, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { mockAbilities } from '@/lib/mock-data';
 import { CreateAbilityDialog } from './create-ability-dialog';
 import type { Ability } from '@/types';
@@ -64,94 +56,81 @@ export function AbilitiesTab() {
             </div>
 
             <div className="space-y-6">
-                {Object.entries(groupedAbilities).map(([entity, abilities], entityIndex) => (
-                    <motion.div
-                        key={entity}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: entityIndex * 0.1 }}
-                    >
-                        <div className="mb-3 flex items-center gap-2">
+                {Object.entries(groupedAbilities).map(([entity, abilities]) => (
+                    <div key={entity} className="space-y-3">
+                        <div className="flex items-center gap-2">
                             <h3 className="text-lg font-semibold text-foreground">{entity}</h3>
                             <Badge variant="secondary">{abilities.length}</Badge>
                         </div>
-                        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                            {abilities.map((ability, index) => (
-                                <motion.div
-                                    key={ability.id}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.2, delay: index * 0.03 }}
-                                >
-                                    <Card className="p-4 transition-all hover:border-primary/50">
-                                        <div className="flex items-start justify-between gap-2 mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="rounded-lg bg-muted p-2">
-                                                    <Key className="h-4 w-4 text-muted-foreground" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-medium text-sm text-foreground">
-                                                        {ability.title || ability.name}
-                                                    </h4>
-                                                    <p className="text-xs text-muted-foreground font-mono">
+                        <div className="rounded-lg border overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-muted/50 border-b">
+                                        <tr>
+                                            <th className="text-left p-3 text-sm font-medium">Nombre técnico</th>
+                                            <th className="text-left p-3 text-sm font-medium">Título</th>
+                                            <th className="text-left p-3 text-sm font-medium">Tipo</th>
+                                            <th className="text-left p-3 text-sm font-medium">Flags</th>
+                                            <th className="text-right p-3 text-sm font-medium">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {abilities.map((ability) => (
+                                            <tr
+                                                key={ability.id}
+                                                className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                                            >
+                                                <td className="p-3">
+                                                    <code className="text-sm bg-muted px-2 py-1 rounded font-mono">
                                                         {ability.name}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => setEditAbility(ability)}>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Editar
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="text-destructive"
-                                                        onClick={() => handleDeleteAbility(ability)}
-                                                    >
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        Eliminar
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-2">
-                                            {ability.only_owned && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="gap-1 text-xs bg-accent text-accent-foreground border-accent/20"
-                                                >
-                                                    <Lock className="h-3 w-3" />
-                                                    Solo propios
-                                                </Badge>
-                                            )}
-                                            {ability.scope && (
-                                                <Badge variant="outline" className="text-xs">
-                                                    Scope: {ability.scope}
-                                                </Badge>
-                                            )}
-                                        </div>
-
-                                        {ability.entity_type && (
-                                            <div className="mt-3 pt-3 border-t border-border">
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-muted-foreground">Tipo de entidad</span>
-                                                    <span className="font-medium text-foreground">
-                                                        {ability.entity_type}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </Card>
-                                </motion.div>
-                            ))}
+                                                    </code>
+                                                </td>
+                                                <td className="p-3 text-sm">{ability.title || '-'}</td>
+                                                <td className="p-3 text-sm text-muted-foreground">
+                                                    {ability.entity_type || '-'}
+                                                </td>
+                                                <td className="p-3">
+                                                    <div className="flex gap-2">
+                                                        {ability.only_owned && (
+                                                            <Badge variant="secondary" className="gap-1 text-xs">
+                                                                <Lock className="h-3 w-3" />
+                                                                Solo propios
+                                                            </Badge>
+                                                        )}
+                                                        {ability.scope && (
+                                                            <Badge variant="outline" className="text-xs">
+                                                                {ability.scope}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="p-3">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            onClick={() => setEditAbility(ability)}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-destructive hover:text-destructive"
+                                                            onClick={() => handleDeleteAbility(ability)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </motion.div>
+                    </div>
                 ))}
             </div>
 

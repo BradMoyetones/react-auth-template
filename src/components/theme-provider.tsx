@@ -46,8 +46,22 @@ export function ThemeProvider({
     const value = {
         theme,
         setTheme: (theme: Theme) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
+            const transition = document.startViewTransition
+                ? document.startViewTransition(() => {
+                    localStorage.setItem(storageKey, theme);
+                    setTheme(theme);
+                })
+                : null;
+
+            if (transition) {
+                transition.finished.catch(() => {
+                    localStorage.setItem(storageKey, theme);
+                    setTheme(theme);
+                });
+            } else {
+                localStorage.setItem(storageKey, theme);
+                setTheme(theme);
+            }
         },
     };
 

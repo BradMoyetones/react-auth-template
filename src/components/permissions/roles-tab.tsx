@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Plus, Users, MoreVertical, Edit, Trash2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
